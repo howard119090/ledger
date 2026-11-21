@@ -1,0 +1,2023 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <!-- 獨立手機 App (PWA / WebAPK) 全螢幕設定 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="極簡記帳">
+    <meta name="application-name" content="極簡記帳">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0f172a">
+    <!-- 動態 Manifest 佔位標籤 -->
+    <link id="pwa-manifest" rel="manifest" href="">
+    <link id="apple-touch-icon" rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%230f172a'/%3E%3Ccircle cx='90' cy='90' r='56' fill='none' stroke='%2334d399' stroke-width='8'/%3E%3Ctext x='90' y='112' font-size='76' text-anchor='middle' fill='%2334d399' font-family='sans-serif' font-weight='bold'%3E$%3C/text%3E%3C/svg%3E">
+    <link id="favicon-icon" rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%230f172a'/%3E%3Ccircle cx='90' cy='90' r='56' fill='none' stroke='%2334d399' stroke-width='8'/%3E%3Ctext x='90' y='112' font-size='76' text-anchor='middle' fill='%2334d399' font-family='sans-serif' font-weight='bold'%3E$%3C/text%3E%3C/svg%3E">
+    <title>極簡記帳 V6.7</title>
+    <!-- 引入 SheetJS 用於產生與讀取標準 Excel (.xlsx) 檔案 (可選，無網路時自動啟用內建純離線報表引擎) -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <style>
+        /* ==========================================
+           V6.5 100% 離線內建樣式庫 (完全不依賴外部 CDN)
+           ========================================== */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body {
+            width: 100%;
+            max-width: 100vw;
+            overflow-x: hidden;
+            overscroll-behavior-x: none;
+            touch-action: pan-y;
+            -webkit-text-size-adjust: 100%;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+            padding-bottom: 6rem;
+            -webkit-tap-highlight-color: transparent;
+            padding-top: env(safe-area-inset-top);
+            line-height: 1.5;
+        }
+        button, input, select { font-family: inherit; }
+        button { background: transparent; border: none; cursor: pointer; }
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type=number] { -moz-appearance: textfield; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* 佈局與間距工具類 */
+        .hidden { display: none !important; }
+        .flex { display: flex; }
+        .inline-block { display: inline-block; }
+        .grid { display: grid; }
+        .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .flex-col { flex-direction: column; }
+        .flex-1 { flex: 1 1 0%; }
+        .shrink-0 { flex-shrink: 0; }
+        .items-center { align-items: center; }
+        .items-end { align-items: flex-end; }
+        .items-baseline { align-items: baseline; }
+        .justify-between { justify-content: space-between; }
+        .justify-center { justify-content: center; }
+        .justify-end { justify-content: flex-end; }
+        .gap-1\.5 { gap: 0.375rem; }
+        .gap-2 { gap: 0.5rem; }
+        .gap-3 { gap: 0.75rem; }
+        .space-x-0\.5 > :not([hidden]) ~ :not([hidden]) { margin-left: 0.125rem; }
+        .space-x-1 > :not([hidden]) ~ :not([hidden]) { margin-left: 0.25rem; }
+        .space-x-1\.5 > :not([hidden]) ~ :not([hidden]) { margin-left: 0.375rem; }
+        .space-x-2 > :not([hidden]) ~ :not([hidden]) { margin-left: 0.5rem; }
+        .space-x-2\.5 > :not([hidden]) ~ :not([hidden]) { margin-left: 0.625rem; }
+        .space-x-3 > :not([hidden]) ~ :not([hidden]) { margin-left: 0.75rem; }
+        .space-y-1 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.25rem; }
+        .space-y-2 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.5rem; }
+        .space-y-2\.5 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.625rem; }
+        .space-y-3\.5 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.875rem; }
+        .space-y-4 > :not([hidden]) ~ :not([hidden]) { margin-top: 1rem; }
+
+        /* 定位與層級 */
+        .relative { position: relative; }
+        .absolute { position: absolute; }
+        .fixed { position: fixed; }
+        .sticky { position: sticky; }
+        .inset-0 { inset: 0; }
+        .top-0 { top: 0; }
+        .top-16 { top: 4rem; }
+        .top-1\/2 { top: 50%; }
+        .-top-1\.5 { top: -0.375rem; }
+        .-right-1\.5 { right: -0.375rem; }
+        .right-0 { right: 0; }
+        .left-0 { left: 0; }
+        .left-2\.5 { left: 0.625rem; }
+        .left-3\.5 { left: 0.875rem; }
+        .left-4 { left: 1rem; }
+        .left-1\/2 { left: 50%; }
+        .bottom-5 { bottom: 1.25rem; }
+        .-translate-x-1\/2 { transform: translateX(-50%); }
+        .-translate-y-1\/2 { transform: translateY(-50%); }
+        .z-20 { z-index: 20; }
+        .z-30 { z-index: 30; }
+        .z-40 { z-index: 40; }
+        .z-50 { z-index: 50; }
+        .pointer-events-none { pointer-events: none; }
+        .pointer-events-auto { pointer-events: auto; }
+
+        /* 尺寸與內外邊距 */
+        .w-full { width: 100%; }
+        .w-1\.5 { width: 0.375rem; }
+        .w-3 { width: 0.75rem; }
+        .w-3\.5 { width: 0.875rem; }
+        .w-4 { width: 1rem; }
+        .w-5 { width: 1.25rem; }
+        .w-7 { width: 1.75rem; }
+        .w-7\.5 { width: 1.875rem; }
+        .w-8 { width: 2rem; }
+        .w-8\.5 { width: 2.125rem; }
+        .w-9 { width: 2.25rem; }
+        .w-28 { width: 7rem; }
+        .w-36 { width: 9rem; }
+        .max-w-xs { max-width: 20rem; }
+        .max-w-sm { max-width: 24rem; }
+        .max-w-md { max-width: 28rem; }
+        .max-w-full { max-width: 100%; }
+        .h-1 { height: 0.25rem; }
+        .h-1\.5 { height: 0.375rem; }
+        .h-3 { height: 0.75rem; }
+        .h-3\.5 { height: 0.875rem; }
+        .h-4 { height: 1rem; }
+        .h-5 { height: 1.25rem; }
+        .h-7 { height: 1.75rem; }
+        .h-8 { height: 2rem; }
+        .h-8\.5 { height: 2.125rem; }
+        .h-9 { height: 2.25rem; }
+        .h-full { height: 100%; }
+        .max-h-48 { max-height: 12rem; }
+        .max-h-\[85vh\] { max-height: 85vh; }
+        .max-h-\[88vh\] { max-height: 88vh; }
+
+        .mx-auto { margin-left: auto; margin-right: auto; }
+        .mx-0\.5 { margin-left: 0.125rem; margin-right: 0.125rem; }
+        .mx-1 { margin-left: 0.25rem; margin-right: 0.25rem; }
+        .mr-0\.5 { margin-right: 0.125rem; }
+        .mr-1 { margin-right: 0.25rem; }
+        .mr-1\.5 { margin-right: 0.375rem; }
+        .ml-2 { margin-left: 0.5rem; }
+        .mt-0\.5 { margin-top: 0.125rem; }
+        .mt-1 { margin-top: 0.25rem; }
+        .mt-1\.5 { margin-top: 0.375rem; }
+        .mt-2 { margin-top: 0.5rem; }
+        .mt-2\.5 { margin-top: 0.625rem; }
+        .mb-0\.5 { margin-bottom: 0.125rem; }
+        .mb-1 { margin-bottom: 0.25rem; }
+        .mb-1\.5 { margin-bottom: 0.375rem; }
+        .mb-2 { margin-bottom: 0.5rem; }
+        .mb-2\.5 { margin-bottom: 0.625rem; }
+        .mb-3 { margin-bottom: 0.75rem; }
+        .mb-4 { margin-bottom: 1rem; }
+        .my-0\.5 { margin-top: 0.125rem; margin-bottom: 0.125rem; }
+
+        .p-0\.5 { padding: 0.125rem; }
+        .p-1 { padding: 0.25rem; }
+        .p-1\.5 { padding: 0.375rem; }
+        .p-2 { padding: 0.5rem; }
+        .p-2\.5 { padding: 0.625rem; }
+        .p-3 { padding: 0.75rem; }
+        .p-3\.5 { padding: 0.875rem; }
+        .p-4 { padding: 1rem; }
+        .p-6 { padding: 1.5rem; }
+        .px-1 { padding-left: 0.25rem; padding-right: 0.25rem; }
+        .px-1\.5 { padding-left: 0.375rem; padding-right: 0.375rem; }
+        .px-2 { padding-left: 0.5rem; padding-right: 0.5rem; }
+        .px-2\.5 { padding-left: 0.625rem; padding-right: 0.625rem; }
+        .px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
+        .px-3\.5 { padding-left: 0.875rem; padding-right: 0.875rem; }
+        .px-4 { padding-left: 1rem; padding-right: 1rem; }
+        .px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
+        .py-0\.5 { padding-top: 0.125rem; padding-bottom: 0.125rem; }
+        .py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+        .py-1\.5 { padding-top: 0.375rem; padding-bottom: 0.375rem; }
+        .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+        .py-2\.5 { padding-top: 0.625rem; padding-bottom: 0.625rem; }
+        .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+        .py-3\.5 { padding-top: 0.875rem; padding-bottom: 0.875rem; }
+        .pt-1 { padding-top: 0.25rem; }
+        .pt-2\.5 { padding-top: 0.625rem; }
+        .pt-3 { padding-top: 0.75rem; }
+        .pt-3\.5 { padding-top: 0.875rem; }
+        .pt-4 { padding-top: 1rem; }
+        .pb-2 { padding-bottom: 0.5rem; }
+        .pb-3\.5 { padding-bottom: 0.875rem; }
+        .pb-4 { padding-bottom: 1rem; }
+        .pl-2\.5 { padding-left: 0.625rem; }
+        .pl-3 { padding-left: 0.75rem; }
+        .pl-4 { padding-left: 1rem; }
+        .pl-6 { padding-left: 1.5rem; }
+        .pl-8 { padding-left: 2rem; }
+        .pl-9 { padding-left: 2.25rem; }
+        .pr-0\.5 { padding-right: 0.125rem; }
+        .pr-1 { padding-right: 0.25rem; }
+        .pr-2 { padding-right: 0.5rem; }
+        .pr-2\.5 { padding-right: 0.625rem; }
+        .pr-3 { padding-right: 0.75rem; }
+        .pr-3\.5 { padding-right: 0.875rem; }
+        .pr-4 { padding-right: 1rem; }
+
+        /* 色彩與背景 */
+        .bg-transparent { background-color: transparent; }
+        .bg-white { background-color: #ffffff; }
+        .bg-slate-50 { background-color: #f8fafc; }
+        .bg-slate-100 { background-color: #f1f5f9; }
+        .bg-slate-200 { background-color: #e2e8f0; }
+        .bg-slate-200\/80 { background-color: rgba(226, 232, 240, 0.8); }
+        .bg-slate-800 { background-color: #1e293b; }
+        .bg-slate-900 { background-color: #0f172a; }
+        .bg-slate-900\/60 { background-color: rgba(15, 23, 42, 0.6); }
+        .bg-emerald-50 { background-color: #ecfdf5; }
+        .bg-emerald-400 { background-color: #34d399; }
+        .bg-emerald-600 { background-color: #059669; }
+        .bg-blue-50 { background-color: #eff6ff; }
+        .bg-blue-50\/70 { background-color: rgba(239, 246, 255, 0.7); }
+        .bg-blue-500 { background-color: #3b82f6; }
+        .bg-amber-50 { background-color: #fffbeb; }
+        .bg-amber-50\/70 { background-color: rgba(255, 251, 235, 0.7); }
+        .bg-amber-400 { background-color: #fbbf24; }
+        .bg-amber-500 { background-color: #f59e0b; }
+        .bg-rose-50 { background-color: #fff1f2; }
+        .bg-rose-50\/60 { background-color: rgba(255, 241, 242, 0.6); }
+        .bg-rose-500 { background-color: #f43f5e; }
+
+        .text-white { color: #ffffff; }
+        .text-slate-200 { color: #e2e8f0; }
+        .text-slate-300 { color: #cbd5e1; }
+        .text-slate-400 { color: #94a3b8; }
+        .text-slate-500 { color: #64748b; }
+        .text-slate-600 { color: #475569; }
+        .text-slate-700 { color: #334155; }
+        .text-slate-800 { color: #1e293b; }
+        .text-slate-900 { color: #0f172a; }
+        .text-emerald-400 { color: #34d399; }
+        .text-emerald-400\/90 { color: rgba(52, 211, 153, 0.9); }
+        .text-emerald-600 { color: #059669; }
+        .text-blue-400 { color: #60a5fa; }
+        .text-blue-500 { color: #3b82f6; }
+        .text-blue-600 { color: #2563eb; }
+        .text-blue-700 { color: #1d4ed8; }
+        .text-amber-500 { color: #f59e0b; }
+        .text-amber-600 { color: #d97706; }
+        .text-amber-700 { color: #b45309; }
+        .text-rose-400 { color: #fb7185; }
+        .text-rose-500 { color: #f43f5e; }
+        .text-rose-600 { color: #e11d48; }
+
+        /* 字級與排版 */
+        .text-\[10px\] { font-size: 10px; line-height: 1.4; }
+        .text-\[11px\] { font-size: 11px; line-height: 1.4; }
+        .text-xs { font-size: 0.75rem; line-height: 1rem; }
+        .text-sm { font-size: 0.875rem; line-height: 1.25rem; }
+        .text-base { font-size: 1rem; line-height: 1.5rem; }
+        .text-lg { font-size: 1.125rem; line-height: 1.75rem; }
+        .text-xl { font-size: 1.25rem; line-height: 1.75rem; }
+        .font-normal { font-weight: 400; }
+        .font-medium { font-weight: 500; }
+        .font-semibold { font-weight: 600; }
+        .font-bold { font-weight: 700; }
+        .tracking-tight { letter-spacing: -0.025em; }
+        .leading-relaxed { line-height: 1.625; }
+        .text-left { text-align: left; }
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .whitespace-nowrap { white-space: nowrap; }
+        .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .overflow-hidden { overflow: hidden; }
+        .overflow-y-auto { overflow-y: auto; }
+        .list-disc { list-style-type: disc; }
+
+        /* 邊框、圓角與陰影 */
+        .border { border-width: 1px; border-style: solid; }
+        .border-2 { border-width: 2px; border-style: solid; }
+        .border-t { border-top-width: 1px; border-top-style: solid; }
+        .border-b { border-bottom-width: 1px; border-bottom-style: solid; }
+        .border-dashed { border-style: dashed; }
+        .border-slate-100 { border-color: #f1f5f9; }
+        .border-slate-200 { border-color: #e2e8f0; }
+        .border-slate-200\/70 { border-color: rgba(226, 232, 240, 0.7); }
+        .border-slate-700 { border-color: #334155; }
+        .border-emerald-600 { border-color: #059669; }
+        .border-blue-600 { border-color: #2563eb; }
+        .border-amber-500 { border-color: #f59e0b; }
+        .border-rose-200 { border-color: #fecdd3; }
+
+        .rounded { border-radius: 0.25rem; }
+        .rounded-lg { border-radius: 0.5rem; }
+        .rounded-xl { border-radius: 0.75rem; }
+        .rounded-2xl { border-radius: 1rem; }
+        .rounded-t-3xl { border-top-left-radius: 1.5rem; border-top-right-radius: 1.5rem; }
+        .rounded-b-3xl { border-bottom-left-radius: 1.5rem; border-bottom-right-radius: 1.5rem; }
+        .rounded-full { border-radius: 9999px; }
+
+        .shadow-xs { box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); }
+        .shadow-sm { box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1); }
+        .shadow-md { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1); }
+        .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1); }
+        .shadow-xl { box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); }
+        .shadow-2xl { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
+
+        .opacity-0 { opacity: 0; }
+        .opacity-85 { opacity: 0.85; }
+        .backdrop-blur-xs { backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+        .transition { transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1); }
+        .transition-all { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .transition-opacity { transition: opacity 0.3s ease; }
+        .active\:scale-95:active { transform: scale(0.95); }
+        .active\:scale-98:active { transform: scale(0.98); }
+        input:focus, select:focus { outline: none; border-color: #1e293b; background-color: #ffffff; }
+        header select { border: none !important; outline: none !important; box-shadow: none !important; }
+        header select:focus { background-color: transparent; border: none !important; outline: none !important; }
+        .top-pill { height: 1.875rem; line-height: 1; display: inline-flex; align-items: center; justify-content: center; }
+        .top-nav-symmetric { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 0.375rem; }
+        .top-right-pair { display: grid; grid-template-columns: minmax(0, 0.88fr) minmax(0, 1.12fr); gap: 0.375rem; width: 100%; }
+    </style>
+</head>
+<body class="text-slate-800 pb-24">
+
+    <!-- 頂部固定導覽與總覽卡片 -->
+    <header class="w-full max-w-full bg-slate-900 text-white pt-4 pb-4 px-3.5 rounded-b-3xl shadow-lg sticky top-0 z-20">
+        <!-- 上排控制列：以手機圖示圓鈕為正中心，左右兩側完全等寬對稱 -->
+        <div class="max-w-md mx-auto top-nav-symmetric mb-3.5">
+            <!-- 左側 (1fr)：年份 / 月份選擇膠囊，日曆圖示微向右移並與文字保持間距 -->
+            <div class="top-pill w-full bg-slate-800 pl-2.5 pr-1.5 rounded-full border border-slate-700 overflow-hidden">
+                <i data-lucide="calendar" class="w-3.5 h-3.5 text-emerald-400 mr-1 shrink-0"></i>
+                <select id="yearSelector" class="bg-transparent text-xs font-semibold focus:outline-none text-white cursor-pointer">
+                    <!-- 動態產生純數字年份選項 (如 2026) -->
+                </select>
+                <span class="text-slate-500 text-xs mx-0.5">/</span>
+                <select id="monthSelector" class="bg-transparent text-xs font-semibold focus:outline-none text-white cursor-pointer">
+                    <option value="1" class="text-slate-900">1月</option>
+                    <option value="2" class="text-slate-900">2月</option>
+                    <option value="3" class="text-slate-900">3月</option>
+                    <option value="4" class="text-slate-900">4月</option>
+                    <option value="5" class="text-slate-900">5月</option>
+                    <option value="6" class="text-slate-900">6月</option>
+                    <option value="7" class="text-slate-900">7月</option>
+                    <option value="8" class="text-slate-900">8月</option>
+                    <option value="9" class="text-slate-900">9月</option>
+                    <option value="10" class="text-slate-900">10月</option>
+                    <option value="11" selected class="text-slate-900">11月</option>
+                    <option value="12" class="text-slate-900">12月</option>
+                </select>
+            </div>
+
+            <!-- 正中央 (auto)：手機圖示圓鈕 -->
+            <button onclick="openAppInstallModal()" class="top-pill w-7.5 bg-slate-800 hover:bg-slate-700 active:scale-95 transition rounded-full border border-slate-700 text-emerald-400 shrink-0" title="V6.6 離線安裝與資料備份">
+                <i data-lucide="smartphone" class="w-3.5 h-3.5"></i>
+            </button>
+
+            <!-- 右側 (1fr)：複製 + Excel 雙按鈕加總與左側年月膠囊等寬，並給予 Excel 按鈕更充裕的左右留白 -->
+            <div class="top-right-pair">
+                <!-- 複製膠囊按鈕 -->
+                <button onclick="copySummaryToClipboard()" class="top-pill w-full space-x-1 text-xs bg-slate-800 hover:bg-slate-700 active:scale-95 transition px-2 rounded-full border border-slate-700 text-slate-200 font-medium whitespace-nowrap" title="複製文字結算">
+                    <i data-lucide="copy" class="w-3 h-3 shrink-0 text-slate-300"></i>
+                    <span>複製</span>
+                </button>
+
+                <!-- Excel 展開膠囊按鈕 -->
+                <div class="relative w-full" id="excelMenuContainer">
+                    <button type="button" onclick="toggleExcelMenu(event)" class="top-pill w-full space-x-0.5 text-xs bg-emerald-600 hover:bg-emerald-500 active:scale-95 transition px-2.5 rounded-full border border-emerald-600 text-white font-semibold shadow-sm whitespace-nowrap">
+                        <i data-lucide="file-spreadsheet" class="w-3 h-3 shrink-0"></i>
+                        <span>Excel</span>
+                        <i data-lucide="chevron-down" class="w-3 h-3 shrink-0 opacity-85"></i>
+                    </button>
+                    <div id="excelDropdownMenu" class="hidden absolute right-0 mt-1.5 w-36 bg-white rounded-2xl shadow-xl border border-slate-100 py-1.5 z-40 text-slate-700">
+                        <button type="button" onclick="closeExcelMenu(); exportToExcel();" class="w-full px-3.5 py-2.5 text-left text-xs font-semibold hover:bg-slate-50 active:bg-slate-100 flex items-center space-x-2 text-emerald-600 transition">
+                            <i data-lucide="download" class="w-3.5 h-3.5 shrink-0"></i>
+                            <span>匯出 Excel</span>
+                        </button>
+                        <div class="border-t border-slate-100 my-0.5"></div>
+                        <label class="w-full px-3.5 py-2.5 text-left text-xs font-semibold hover:bg-slate-50 active:bg-slate-100 flex items-center space-x-2 text-slate-700 cursor-pointer transition">
+                            <i data-lucide="file-up" class="w-3.5 h-3.5 text-blue-500 shrink-0"></i>
+                            <span>匯入更新</span>
+                            <input type="file" accept=".xlsx,.xls" onchange="closeExcelMenu(); importFromExcel(event);" class="hidden">
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 可用金額與剩餘餘額 -->
+        <div class="max-w-md mx-auto grid grid-cols-2 gap-3 items-end">
+            <div>
+                <div class="text-[11px] text-slate-400 mb-0.5 flex items-center space-x-1">
+                    <span>本月可用金額</span>
+                    <button onclick="openBudgetModal()" class="text-emerald-400 hover:text-emerald-300 p-0.5">
+                        <i data-lucide="edit-2" class="w-3 h-3"></i>
+                    </button>
+                </div>
+                <div onclick="openBudgetModal()" class="text-xl font-bold tracking-tight cursor-pointer flex items-baseline">
+                    <span class="text-xs font-normal text-slate-400 mr-1">$</span>
+                    <span id="displayBudget">28,200</span>
+                </div>
+            </div>
+            <div class="text-right">
+                <div class="text-[11px] text-slate-400 mb-0.5">目前剩餘餘額</div>
+                <div id="displayRemaining" class="text-xl font-bold tracking-tight text-emerald-400">
+                    $28,200
+                </div>
+            </div>
+        </div>
+
+        <!-- 進度條 -->
+        <div class="max-w-md mx-auto mt-2.5">
+            <div class="flex justify-between text-[11px] text-slate-400 mb-1">
+                <span>已支出：<span id="displayTotalSpent" class="text-white font-medium">$0</span></span>
+                <span id="displaySpentPercent">0%</span>
+            </div>
+            <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden flex">
+                <div id="barEssential" class="bg-blue-500 h-full transition-all duration-300" style="width: 0%"></div>
+                <div id="barNonEssential" class="bg-amber-400 h-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+            <div class="flex justify-between items-center mt-1.5 text-[10px] text-slate-400">
+                <span id="storageBadge" class="flex items-center text-emerald-400/90">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5"></span>V6.7 純離線核心就緒
+                </span>
+                <div class="flex space-x-2.5">
+                    <span class="flex items-center"><span class="w-1.5 h-1.5 rounded-full bg-blue-500 mr-1"></span>必要性</span>
+                    <span class="flex items-center"><span class="w-1.5 h-1.5 rounded-full bg-amber-400 mr-1"></span>非必要性</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主內容區 -->
+    <main class="max-w-md mx-auto px-3.5 pt-3.5 space-y-4">
+
+        <!-- 結算總覽區塊 -->
+        <section class="bg-white rounded-2xl p-3.5 shadow-sm border border-slate-100">
+            <div class="flex justify-between items-center gap-1.5 mb-2.5 pb-2 border-b border-slate-100">
+                <h2 class="text-xs font-bold text-slate-700 flex items-center whitespace-nowrap">
+                    <i data-lucide="pie-chart" class="w-3.5 h-3.5 mr-1 text-slate-500 shrink-0"></i>
+                    <span id="summaryPeriodTitle">2026/11月</span>&nbsp;分類結算
+                </h2>
+                <div class="flex items-center space-x-1 shrink-0">
+                    <button onclick="openCatLimitsModal()" class="flex items-center space-x-1 text-[11px] font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 active:scale-95 transition px-2 py-1 rounded-full whitespace-nowrap">
+                        <i data-lucide="sliders-horizontal" class="w-3 h-3 shrink-0"></i>
+                        <span>設定上限</span>
+                    </button>
+                    <button onclick="openNewCatModal()" class="flex items-center space-x-1 text-[11px] font-semibold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 active:scale-95 transition px-2 py-1 rounded-full whitespace-nowrap">
+                        <i data-lucide="plus-circle" class="w-3 h-3 shrink-0"></i>
+                        <span>新增項目</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 必要性群組 -->
+            <div class="mb-2.5">
+                <div class="flex justify-between items-center text-xs font-semibold text-blue-600 bg-blue-50/70 px-2.5 py-1 rounded-lg mb-1.5">
+                    <span>必要性支出</span>
+                    <span id="sumEssential">$0</span>
+                </div>
+                <div id="grid-essential" class="grid grid-cols-3 gap-2">
+                    <!-- 動態產生必要性分類卡片 -->
+                </div>
+            </div>
+
+            <!-- 非必要性群組 -->
+            <div>
+                <div class="flex justify-between items-center text-xs font-semibold text-amber-600 bg-amber-50/70 px-2.5 py-1 rounded-lg mb-1.5">
+                    <span>非必要性支出</span>
+                    <span id="sumNonEssential">$0</span>
+                </div>
+                <div id="grid-nonessential" class="grid grid-cols-2 gap-2">
+                    <!-- 動態產生非必要性分類卡片 -->
+                </div>
+            </div>
+        </section>
+
+        <!-- 消費明細列表 -->
+        <section>
+            <div class="flex justify-between items-center mb-2.5 px-1">
+                <h2 class="text-sm font-bold text-slate-700 flex items-center">
+                    <i data-lucide="list" class="w-4 h-4 mr-1.5 text-slate-500"></i>
+                    記帳明細 (<span id="recordCount">0</span>)
+                </h2>
+                <select id="filterCategory" onchange="renderApp()" class="text-xs bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-600">
+                    <option value="ALL">全部分類</option>
+                </select>
+            </div>
+
+            <div id="recordsList" class="space-y-2">
+                <!-- 動態產生明細項目 -->
+            </div>
+        </section>
+    </main>
+
+    <!-- 底部浮動新增按鈕 -->
+    <div class="fixed bottom-5 left-0 right-0 flex justify-center z-20 pointer-events-none">
+        <button onclick="openAddModal()" class="pointer-events-auto bg-slate-900 hover:bg-slate-800 active:scale-95 transition text-white px-6 py-3 rounded-full shadow-xl flex items-center space-x-2 font-semibold text-sm border border-slate-700">
+            <i data-lucide="plus" class="w-5 h-5 text-emerald-400"></i>
+            <span>記一筆開銷</span>
+        </button>
+    </div>
+
+    <!-- 新增/編輯記帳 Modal -->
+    <div id="addModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-30 hidden flex-col justify-end transition-opacity">
+        <div class="bg-white rounded-t-3xl p-6 w-full max-w-md mx-auto shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="expenseModalTitle" class="text-lg font-bold text-slate-800">新增支出紀錄 (<span id="modalPeriodLabel">2026/11月</span>)</h3>
+                <button onclick="closeAddModal()" class="p-1.5 text-slate-400 hover:text-slate-600 rounded-full bg-slate-100">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form id="expenseForm" onsubmit="handleAddExpense(event)" class="space-y-4">
+                <input type="hidden" id="editingRecordId" value="">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 mb-2">選擇分類</label>
+                    <div class="space-y-2 max-h-48 overflow-y-auto no-scrollbar pr-1">
+                        <div class="text-[11px] text-blue-600 font-medium">必要性</div>
+                        <div id="modal-cat-essential" class="grid grid-cols-3 gap-2"></div>
+                        <div class="text-[11px] text-amber-600 font-medium pt-1">非必要性</div>
+                        <div id="modal-cat-nonessential" class="grid grid-cols-2 gap-2"></div>
+                    </div>
+                    <input type="hidden" id="selectedCategory" value="食" required>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 mb-1.5">金額</label>
+                    <div class="relative">
+                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-lg">$</span>
+                        <input type="number" id="inputAmount" inputmode="numeric" placeholder="0" required min="1"
+                            class="w-full pl-9 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xl font-bold text-slate-800 transition">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 mb-1.5">說明 (備註)</label>
+                    <input type="text" id="inputNote" placeholder="例如：午餐便當、捷運儲值、買書..."
+                        class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 transition">
+                </div>
+
+                <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 active:scale-98 text-white font-bold py-3.5 rounded-xl shadow-md transition mt-2">
+                    確認儲存
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 修改可用金額 Modal -->
+    <div id="budgetModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-30 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-xs shadow-2xl">
+            <h3 class="text-base font-bold text-slate-800 mb-1">設定本月可用金額</h3>
+            <p class="text-xs text-slate-500 mb-4">調整 <span id="budgetPeriodLabel">2026/11月</span> 的總預算上限</p>
+            <div class="relative mb-4">
+                <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
+                <input type="number" id="inputBudget" inputmode="numeric"
+                    class="w-full pl-8 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-lg font-bold text-slate-800">
+            </div>
+            <div class="flex space-x-2">
+                <button onclick="closeBudgetModal()" class="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-600 text-sm font-semibold">取消</button>
+                <button onclick="saveBudget()" class="flex-1 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-semibold">儲存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 新增分類項目 Modal -->
+    <div id="newCatModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-30 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-xs shadow-2xl">
+            <h3 class="text-base font-bold text-slate-800 mb-1">新增支出項目</h3>
+            <p class="text-xs text-slate-500 mb-4">選擇所屬大類並輸入項目名稱</p>
+            <form onsubmit="handleAddCategory(event)" class="space-y-3.5">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 mb-1.5">所屬大類</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button" id="btnGroupEss" onclick="selectNewCatGroup('必要性')" class="py-2 rounded-xl border-2 border-blue-600 bg-blue-50 text-blue-700 text-xs font-bold transition">必要性</button>
+                        <button type="button" id="btnGroupNonEss" onclick="selectNewCatGroup('非必要性')" class="py-2 rounded-xl border border-slate-200 bg-white text-slate-600 text-xs font-medium transition">非必要性</button>
+                    </div>
+                    <input type="hidden" id="newCatGroup" value="必要性">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 mb-1.5">項目名稱</label>
+                    <input type="text" id="newCatName" placeholder="例如：水電費、醫療、衣服..." required maxlength="8"
+                        class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 mb-1.5">可用上限 (選填)</label>
+                    <div class="relative">
+                        <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">$</span>
+                        <input type="number" id="newCatLimit" inputmode="numeric" min="0" placeholder="未設定"
+                            class="w-full pl-8 pr-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800">
+                    </div>
+                </div>
+                <div class="flex space-x-2 pt-1">
+                    <button type="button" onclick="closeNewCatModal()" class="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-600 text-sm font-semibold">取消</button>
+                    <button type="submit" class="flex-1 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-semibold">新增</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 各項目可用上限設定 Modal -->
+    <div id="catLimitsModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-30 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl max-h-[85vh] flex flex-col">
+            <div class="flex justify-between items-center mb-1">
+                <h3 class="text-base font-bold text-slate-800">設定各項目可用上限</h3>
+                <button onclick="closeCatLimitsModal()" class="p-1 text-slate-400 hover:text-slate-600 rounded-full bg-slate-100">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+            <p class="text-xs text-slate-500 mb-3">留空或填 0 代表不限制該項目上限</p>
+            <div id="catLimitsList" class="space-y-2.5 overflow-y-auto no-scrollbar flex-1 pr-1 mb-4"></div>
+            <div class="flex justify-between items-center text-xs text-slate-500 bg-slate-50 px-3 py-2 rounded-xl mb-3">
+                <span>各項目上限加總：</span>
+                <span id="catLimitsTotalDisplay" class="font-bold text-slate-800">$0</span>
+            </div>
+            <div class="flex space-x-2">
+                <button type="button" onclick="closeCatLimitsModal()" class="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-600 text-sm font-semibold">取消</button>
+                <button type="button" onclick="saveCatLimits()" class="flex-1 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-semibold">儲存設定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 手機 WebAPK 獨立安裝與資料備份 Modal -->
+    <div id="appInstallModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-30 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl max-h-[88vh] overflow-y-auto no-scrollbar">
+            <div class="flex justify-between items-center mb-2">
+                <h3 class="text-base font-bold text-slate-800 flex items-center">
+                    <i data-lucide="smartphone" class="w-4 h-4 mr-1.5 text-emerald-600"></i>
+                    V6.7 獨立運作與 AppBlock 排除教學
+                </h3>
+                <button onclick="closeAppInstallModal()" class="p-1 text-slate-400 hover:text-slate-600 rounded-full bg-slate-100">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+            <div class="space-y-2.5 text-xs text-slate-700 bg-slate-50 p-3.5 rounded-xl border border-slate-100 mb-4">
+                <div>
+                    <span class="font-bold text-slate-900">1. 如何徹底避免 AppBlock 封鎖 Chrome 時連帶被鎖？</span>
+                    <p class="text-slate-600 mt-1 leading-relaxed">
+                        只要桌面圖示是從 Chrome 安裝的，Android 就會認定它是 Chrome 的分身而一併封鎖。請改用<strong>「Samsung Internet (三星瀏覽器)」</strong>或<strong>「Microsoft Edge」</strong>開啟本網址並按「加到主畫面」，且<strong>不要封鎖該瀏覽器</strong>，即可完全獨立運行！
+                    </p>
+                </div>
+                <div class="pt-2.5 border-t border-slate-200/70">
+                    <span class="font-bold text-slate-900">2. 飛航模式 / 無網路 100% 離線使用</span>
+                    <div id="pwaInstallBtnWrap" class="hidden mt-2 mb-1">
+                        <button type="button" onclick="triggerNativeInstall()" class="w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-xs flex items-center justify-center space-x-1.5 shadow-sm">
+                            <i data-lucide="download-cloud" class="w-4 h-4"></i>
+                            <span>一鍵安裝「極簡記帳」獨立 App</span>
+                        </button>
+                    </div>
+                    <p class="text-slate-500 mt-1">已將所有畫面樣式與圖示內建於單一檔案中。部署時請將 <code>index.html</code> 與 <code>sw.js</code> 放在一起，有網路時打開一次後，即使飛航模式斷網也能秒開使用。</p>
+                </div>
+                <div class="pt-2.5 border-t border-slate-200/70">
+                    <span class="font-bold text-slate-900">3. 換瀏覽器或換機前的資料轉移</span>
+                    <p class="text-slate-500 mt-1 mb-2">更換瀏覽器安裝前，請先匯出備份檔，到新安裝的 App 中還原即可：</p>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button" onclick="exportBackupJson()" class="flex items-center justify-center space-x-1 py-2 px-2.5 bg-white border border-slate-200 hover:bg-slate-100 rounded-lg font-semibold text-slate-700 transition">
+                            <i data-lucide="download" class="w-3.5 h-3.5 text-emerald-600"></i>
+                            <span>匯出備份檔</span>
+                        </button>
+                        <label class="flex items-center justify-center space-x-1 py-2 px-2.5 bg-white border border-slate-200 hover:bg-slate-100 rounded-lg font-semibold text-slate-700 transition cursor-pointer">
+                            <i data-lucide="upload" class="w-3.5 h-3.5 text-blue-600"></i>
+                            <span>還原備份檔</span>
+                            <input type="file" accept=".json" onchange="importBackupJson(event)" class="hidden">
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <button type="button" onclick="closeAppInstallModal()" class="w-full py-2.5 rounded-xl bg-slate-900 text-white text-sm font-semibold">完成</button>
+        </div>
+    </div>
+
+    <!-- 自訂提示訊息 Toast -->
+    <div id="toast" class="fixed top-16 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs font-medium px-4 py-2.5 rounded-full shadow-lg opacity-0 pointer-events-none transition-opacity duration-300 z-50 flex items-center space-x-1.5">
+        <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>
+        <span id="toastMsg">已儲存</span>
+    </div>
+
+    <script>
+        // 離線狀態下的內建 SVG 圖示庫 (100% 不依賴外部 CDN)
+        const OFFLINE_SVG_PATHS = {
+            'calendar': '<rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
+            'smartphone': '<rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/>',
+            'copy': '<rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+            'file-up': '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M12 12v6"/><path d="m15 15-3-3-3 3"/>',
+            'file-spreadsheet': '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/>',
+            'chevron-down': '<polyline points="6 9 12 15 18 9"/>',
+            'edit-2': '<path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>',
+            'pie-chart': '<path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/>',
+            'sliders-horizontal': '<line x1="21" y1="4" x2="14" y2="4"/><line x1="10" y1="4" x2="3" y2="4"/><line x1="21" y1="12" x2="12" y2="12"/><line x1="8" y1="12" x2="3" y2="12"/><line x1="21" y1="20" x2="16" y2="20"/><line x1="12" y1="20" x2="3" y2="20"/><line x1="14" y1="2" x2="14" y2="6"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="16" y1="18" x2="16" y2="22"/>',
+            'plus-circle': '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>',
+            'list': '<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>',
+            'plus': '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+            'x': '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+            'home': '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
+            'utensils': '<path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/>',
+            'train': '<rect x="4" y="3" width="16" height="16" rx="2"/><path d="M4 11h16"/><path d="M12 3v8"/><path d="m8 19-2 3"/><path d="m18 22-2-3"/><path d="M8 15h0"/><path d="M16 15h0"/>',
+            'gamepad-2': '<line x1="6" y1="11" x2="10" y2="11"/><line x1="8" y1="9" x2="8" y2="13"/><line x1="15" y1="12" x2="15.01" y2="12"/><line x1="18" y1="10" x2="18.01" y2="10"/><path d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z"/>',
+            'book-open': '<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>',
+            'check-circle': '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',
+            'check-circle-2': '<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',
+            'sparkles': '<path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>',
+            'tag': '<path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><path d="M7 7h.01"/>',
+            'receipt': '<path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17V7"/>',
+            'trash-2': '<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>',
+            'download': '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',
+            'upload': '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>',
+            'download-cloud': '<polyline points="8 17 12 21 16 17"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"/>'
+        };
+
+        function safeRenderIcons() {
+            document.querySelectorAll('[data-lucide]').forEach(el => {
+                const name = el.getAttribute('data-lucide');
+                const paths = OFFLINE_SVG_PATHS[name] || OFFLINE_SVG_PATHS['tag'];
+                const cls = el.getAttribute('class') || 'w-4 h-4';
+                el.outerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="${cls}">${paths}</svg>`;
+            });
+        }
+
+        // ==========================================
+        // 1. 防止雙指縮放與畫面右側白邊偏移
+        // ==========================================
+        document.addEventListener('gesturestart', function (e) {
+            e.preventDefault();
+        });
+        document.addEventListener('touchmove', function (e) {
+            if (e.touches && e.touches.length > 1) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        // ==========================================
+        // 2. WebAPK 動態 PNG 圖示 + Manifest + 實體 sw.js 註冊
+        // ==========================================
+        let deferredInstallPrompt = null;
+
+        function generatePngIconDataUrl(size) {
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+
+            const radius = size * 0.22;
+            ctx.fillStyle = '#0f172a';
+            ctx.beginPath();
+            ctx.moveTo(radius, 0);
+            ctx.lineTo(size - radius, 0);
+            ctx.quadraticCurveTo(size, 0, size, radius);
+            ctx.lineTo(size, size - radius);
+            ctx.quadraticCurveTo(size, size, size - radius, size);
+            ctx.lineTo(radius, size);
+            ctx.quadraticCurveTo(0, size, 0, size - radius);
+            ctx.lineTo(0, radius);
+            ctx.quadraticCurveTo(0, 0, radius, 0);
+            ctx.closePath();
+            ctx.fill();
+
+            const center = size / 2;
+            ctx.strokeStyle = '#34d399';
+            ctx.lineWidth = size * 0.048;
+            ctx.beginPath();
+            ctx.arc(center, center, size * 0.31, 0, Math.PI * 2);
+            ctx.stroke();
+
+            ctx.fillStyle = '#34d399';
+            ctx.font = `bold ${Math.round(size * 0.43)}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('$', center, center + size * 0.025);
+
+            return canvas.toDataURL('image/png');
+        }
+
+        function setupWebApkPwa() {
+            try {
+                const icon192 = generatePngIconDataUrl(192);
+                const icon512 = generatePngIconDataUrl(512);
+
+                const appleIconEl = document.getElementById('apple-touch-icon');
+                const favIconEl = document.getElementById('favicon-icon');
+                if (appleIconEl) appleIconEl.href = icon192;
+                if (favIconEl) {
+                    favIconEl.type = 'image/png';
+                    favIconEl.href = icon192;
+                }
+
+                const currentUrl = window.location.href.split('#')[0];
+                const baseScope = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
+                const manifestObj = {
+                    name: '極簡記帳',
+                    short_name: '極簡記帳',
+                    description: '個人跨年度預算、分類上限與收支結算獨立應用程式',
+                    start_url: currentUrl,
+                    scope: baseScope,
+                    display: 'standalone',
+                    orientation: 'portrait',
+                    background_color: '#f8fafc',
+                    theme_color: '#0f172a',
+                    icons: [
+                        {
+                            src: icon192,
+                            sizes: '192x192',
+                            type: 'image/png',
+                            purpose: 'any maskable'
+                        },
+                        {
+                            src: icon512,
+                            sizes: '512x512',
+                            type: 'image/png',
+                            purpose: 'any maskable'
+                        }
+                    ]
+                };
+
+                const manifestBlob = new Blob([JSON.stringify(manifestObj)], { type: 'application/manifest+json' });
+                const manifestUrl = URL.createObjectURL(manifestBlob);
+                const manifestLink = document.getElementById('pwa-manifest');
+                if (manifestLink) {
+                    manifestLink.setAttribute('href', manifestUrl);
+                }
+
+                if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.hostname === 'localhost')) {
+                    navigator.serviceWorker.register('./sw.js', { scope: './' })
+                        .then((reg) => {
+                            const badge = document.getElementById('storageBadge');
+                            if (badge && reg.active) {
+                                badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5"></span>V6.7 離線引擎已就緒`;
+                            }
+                        })
+                        .catch((err) => {
+                            console.warn('實體 sw.js 註冊提示 (請確認 sw.js 已上傳至同目錄):', err);
+                        });
+                }
+            } catch (err) {
+                console.warn('PWA 初始化提示:', err);
+            }
+        }
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredInstallPrompt = e;
+            const wrap = document.getElementById('pwaInstallBtnWrap');
+            if (wrap) wrap.classList.remove('hidden');
+        });
+
+        async function triggerNativeInstall() {
+            if (!deferredInstallPrompt) {
+                showToast('請點擊瀏覽器選單中的「安裝應用程式」或「加到主畫面」');
+                return;
+            }
+            deferredInstallPrompt.prompt();
+            const { outcome } = await deferredInstallPrompt.userChoice;
+            if (outcome === 'accepted') {
+                showToast('正在打包安裝「極簡記帳」獨立 App，請稍候查看桌面！');
+                closeAppInstallModal();
+            }
+            deferredInstallPrompt = null;
+        }
+
+        // ==========================================
+        // 3. 跨年份本機儲存與資料相容性 (自動繼承 V5 / V4 / V3 / V2 資料)
+        // ==========================================
+        const STORAGE_KEYS = {
+            DATA: 'minimal_ledger_v6_data',
+            CATEGORIES: 'minimal_ledger_v6_categories',
+            PERIOD: 'minimal_ledger_v6_period',
+            V5_DATA: 'minimal_ledger_v5_data',
+            V5_CATEGORIES: 'minimal_ledger_v5_categories',
+            V5_PERIOD: 'minimal_ledger_v5_period',
+            V4_DATA: 'minimal_ledger_v4_data',
+            V4_CATEGORIES: 'minimal_ledger_v4_categories',
+            V4_PERIOD: 'minimal_ledger_v4_period',
+            V3_DATA: 'minimal_ledger_v3_data',
+            V3_CATEGORIES: 'minimal_ledger_v3_categories',
+            V3_MONTH: 'minimal_ledger_v3_month',
+            V2_DATA: 'minimal_ledger_v2_data',
+            V2_CATEGORIES: 'minimal_ledger_v2_categories',
+            V2_MONTH: 'minimal_ledger_v2_month'
+        };
+
+        const DEFAULT_CATEGORY_META = {
+            '租金': { group: '必要性', icon: 'home', color: 'blue', isCustom: false },
+            '食': { group: '必要性', icon: 'utensils', color: 'blue', isCustom: false },
+            '交通': { group: '必要性', icon: 'train', color: 'blue', isCustom: false },
+            '娛樂': { group: '非必要性', icon: 'gamepad-2', color: 'amber', isCustom: false },
+            '自我投資': { group: '非必要性', icon: 'book-open', color: 'amber', isCustom: false }
+        };
+
+        let CATEGORY_META = JSON.parse(JSON.stringify(DEFAULT_CATEGORY_META));
+        let appData = {};
+
+        const sysNow = new Date();
+        let currentYear = String(sysNow.getFullYear());
+        let currentMonth = String(sysNow.getMonth() + 1);
+
+        function getCurrentPeriodKey() {
+            return `${currentYear}-${currentMonth}`;
+        }
+
+        function getCurrentPeriodLabel() {
+            return `${currentYear}/${currentMonth}月`;
+        }
+
+        function ensureCurrentPeriodData() {
+            const key = getCurrentPeriodKey();
+            if (!appData[key]) {
+                appData[key] = { budget: 28200, limits: {}, records: [] };
+            }
+            return appData[key];
+        }
+
+        function initYearSelector(extraYears = []) {
+            const yearSel = document.getElementById('yearSelector');
+            const baseYear = new Date().getFullYear();
+            const yearSet = new Set();
+
+            for (let y = baseYear - 2; y <= baseYear + 10; y++) {
+                yearSet.add(String(y));
+            }
+            extraYears.forEach(y => {
+                if (y && !isNaN(Number(y))) yearSet.add(String(y));
+            });
+
+            const sortedYears = Array.from(yearSet).sort((a, b) => Number(a) - Number(b));
+            yearSel.innerHTML = '';
+            sortedYears.forEach(y => {
+                const opt = document.createElement('option');
+                opt.value = y;
+                opt.textContent = y;
+                opt.className = 'text-slate-900';
+                yearSel.appendChild(opt);
+            });
+        }
+
+        function migrateLegacyDataObject(rawObj, fallbackYear) {
+            const migrated = {};
+            for (const [k, val] of Object.entries(rawObj)) {
+                if (k.includes('-')) {
+                    migrated[k] = val;
+                } else {
+                    migrated[`${fallbackYear}-${k}`] = val;
+                }
+            }
+            return migrated;
+        }
+
+        function loadFromLocalStorage() {
+            try {
+                const savedCats = localStorage.getItem(STORAGE_KEYS.CATEGORIES)
+                    || localStorage.getItem(STORAGE_KEYS.V5_CATEGORIES)
+                    || localStorage.getItem(STORAGE_KEYS.V4_CATEGORIES)
+                    || localStorage.getItem(STORAGE_KEYS.V3_CATEGORIES)
+                    || localStorage.getItem(STORAGE_KEYS.V2_CATEGORIES);
+                if (savedCats) {
+                    const parsedCats = JSON.parse(savedCats);
+                    if (parsedCats && typeof parsedCats === 'object' && Object.keys(parsedCats).length > 0) {
+                        CATEGORY_META = parsedCats;
+                    }
+                }
+
+                const v6DataRaw = localStorage.getItem(STORAGE_KEYS.DATA);
+                if (v6DataRaw) {
+                    const parsedData = JSON.parse(v6DataRaw);
+                    if (parsedData && typeof parsedData === 'object') {
+                        appData = migrateLegacyDataObject(parsedData, currentYear);
+                    }
+                } else {
+                    const legacyDataRaw = localStorage.getItem(STORAGE_KEYS.V5_DATA)
+                        || localStorage.getItem(STORAGE_KEYS.V4_DATA)
+                        || localStorage.getItem(STORAGE_KEYS.V3_DATA)
+                        || localStorage.getItem(STORAGE_KEYS.V2_DATA);
+                    if (legacyDataRaw) {
+                        const parsedLegacy = JSON.parse(legacyDataRaw);
+                        if (parsedLegacy && typeof parsedLegacy === 'object') {
+                            appData = migrateLegacyDataObject(parsedLegacy, currentYear);
+                        }
+                    }
+                }
+
+                const existingYears = Object.keys(appData).map(k => k.split('-')[0]);
+                initYearSelector(existingYears);
+
+                const savedPeriod = localStorage.getItem(STORAGE_KEYS.PERIOD)
+                    || localStorage.getItem(STORAGE_KEYS.V5_PERIOD)
+                    || localStorage.getItem(STORAGE_KEYS.V4_PERIOD);
+                if (savedPeriod && savedPeriod.includes('-')) {
+                    const [savedY, savedM] = savedPeriod.split('-');
+                    if (document.querySelector(`#yearSelector option[value="${savedY}"]`)) {
+                        currentYear = savedY;
+                    }
+                    if (document.querySelector(`#monthSelector option[value="${savedM}"]`)) {
+                        currentMonth = savedM;
+                    }
+                } else {
+                    const legacyMonth = localStorage.getItem(STORAGE_KEYS.V3_MONTH) || localStorage.getItem(STORAGE_KEYS.V2_MONTH);
+                    if (legacyMonth && document.querySelector(`#monthSelector option[value="${legacyMonth}"]`)) {
+                        currentMonth = legacyMonth;
+                    }
+                }
+
+                document.getElementById('yearSelector').value = currentYear;
+                document.getElementById('monthSelector').value = currentMonth;
+
+                ensureCurrentPeriodData();
+                saveToLocalStorage(true);
+            } catch (err) {
+                console.error('讀取本機資料失敗:', err);
+                initYearSelector();
+                ensureCurrentPeriodData();
+            }
+        }
+
+        function saveToLocalStorage(isSilent = false) {
+            try {
+                localStorage.setItem(STORAGE_KEYS.DATA, JSON.stringify(appData));
+                localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(CATEGORY_META));
+                localStorage.setItem(STORAGE_KEYS.PERIOD, getCurrentPeriodKey());
+
+                const badge = document.getElementById('storageBadge');
+                if (badge && !isSilent) {
+                    const now = new Date();
+                    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+                    badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5"></span>已本機自動保存 (${timeStr})`;
+                }
+            } catch (err) {
+                console.error('寫入本機資料失敗:', err);
+                showToast('本機儲存空間不足，請先匯出 Excel 或備份檔');
+            }
+        }
+
+        window.onload = function() {
+            setupWebApkPwa();
+            loadFromLocalStorage();
+            syncCategoryUI();
+            const firstCat = Object.keys(CATEGORY_META)[0] || '食';
+            selectCategory(CATEGORY_META['食'] ? '食' : firstCat);
+            renderApp();
+
+            document.getElementById('yearSelector').addEventListener('change', (e) => {
+                currentYear = e.target.value;
+                ensureCurrentPeriodData();
+                saveToLocalStorage();
+                renderApp();
+            });
+
+            document.getElementById('monthSelector').addEventListener('change', (e) => {
+                currentMonth = e.target.value;
+                ensureCurrentPeriodData();
+                saveToLocalStorage();
+                renderApp();
+            });
+        };
+
+        function syncCategoryUI() {
+            const gridEss = document.getElementById('grid-essential');
+            const gridNonEss = document.getElementById('grid-nonessential');
+            const modalEss = document.getElementById('modal-cat-essential');
+            const modalNonEss = document.getElementById('modal-cat-nonessential');
+            const filterSel = document.getElementById('filterCategory');
+            const currentFilter = filterSel.value || 'ALL';
+
+            gridEss.innerHTML = '';
+            gridNonEss.innerHTML = '';
+            modalEss.innerHTML = '';
+            modalNonEss.innerHTML = '';
+            filterSel.innerHTML = '<option value="ALL">全部分類</option>';
+
+            for (const [cat, meta] of Object.entries(CATEGORY_META)) {
+                const isEss = meta.group === '必要性';
+                const iconColor = isEss ? 'text-blue-400' : 'text-amber-500';
+
+                const cardHtml = `
+                    <div class="relative group">
+                        <button id="card-btn-${escapeHtml(cat)}" onclick="quickAdd('${escapeHtml(cat)}')" class="w-full bg-slate-50 hover:bg-slate-100 active:scale-95 transition p-2 rounded-xl border border-slate-100 text-left">
+                            <div class="text-xs text-slate-500 mb-0.5 flex items-center justify-between pr-2.5">
+                                <span class="truncate">${escapeHtml(cat)}</span>
+                                <i data-lucide="${meta.icon}" class="w-3 h-3 ${iconColor} shrink-0"></i>
+                            </div>
+                            <div id="cat-${escapeHtml(cat)}" class="text-sm font-bold text-slate-800 truncate">$0</div>
+                            <div id="limit-wrap-${escapeHtml(cat)}" class="hidden mt-1">
+                                <div class="flex justify-between text-[10px] text-slate-400 mb-0.5">
+                                    <span>上限</span>
+                                    <span id="limit-text-${escapeHtml(cat)}">$0</span>
+                                </div>
+                                <div class="w-full bg-slate-200/80 rounded-full h-1 overflow-hidden">
+                                    <div id="limit-bar-${escapeHtml(cat)}" class="bg-blue-500 h-full transition-all duration-300" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </button>
+                        ${meta.isCustom ? `
+                        <button onclick="deleteCustomCategory(event, '${escapeHtml(cat)}')" title="刪除自訂項目" class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-slate-200 hover:bg-rose-500 text-slate-600 hover:text-white rounded-full flex items-center justify-center text-[10px] shadow-xs transition">
+                            ×
+                        </button>` : ''}
+                    </div>
+                `;
+                if (isEss) {
+                    gridEss.insertAdjacentHTML('beforeend', cardHtml);
+                } else {
+                    gridNonEss.insertAdjacentHTML('beforeend', cardHtml);
+                }
+
+                const btnHtml = `<button type="button" onclick="selectCategory('${escapeHtml(cat)}')" class="cat-btn py-2.5 px-2 rounded-xl border text-sm font-medium transition text-center truncate" data-cat="${escapeHtml(cat)}">${escapeHtml(cat)}</button>`;
+                if (isEss) {
+                    modalEss.insertAdjacentHTML('beforeend', btnHtml);
+                } else {
+                    modalNonEss.insertAdjacentHTML('beforeend', btnHtml);
+                }
+
+                const opt = document.createElement('option');
+                opt.value = cat;
+                opt.textContent = `${cat} (${meta.group})`;
+                filterSel.appendChild(opt);
+            }
+
+            if (CATEGORY_META[currentFilter] || currentFilter === 'ALL') {
+                filterSel.value = currentFilter;
+            }
+            safeRenderIcons();
+        }
+
+        function formatMoney(num) {
+            return num.toLocaleString('zh-TW');
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMsg').textContent = msg;
+            toast.classList.remove('opacity-0');
+            setTimeout(() => {
+                toast.classList.add('opacity-0');
+            }, 2200);
+        }
+
+        function renderApp() {
+            const periodData = ensureCurrentPeriodData();
+            const budget = periodData.budget;
+            const records = periodData.records;
+            const filter = document.getElementById('filterCategory').value;
+            const periodLabel = getCurrentPeriodLabel();
+
+            const summaryTitleEl = document.getElementById('summaryPeriodTitle');
+            const modalPeriodEl = document.getElementById('modalPeriodLabel');
+            const budgetPeriodEl = document.getElementById('budgetPeriodLabel');
+            if (summaryTitleEl) summaryTitleEl.textContent = periodLabel;
+            if (modalPeriodEl) modalPeriodEl.textContent = periodLabel;
+            if (budgetPeriodEl) budgetPeriodEl.textContent = periodLabel;
+
+            const catSums = {};
+            for (const cat of Object.keys(CATEGORY_META)) {
+                catSums[cat] = 0;
+            }
+            records.forEach(r => {
+                if (catSums.hasOwnProperty(r.category)) {
+                    catSums[r.category] += r.amount;
+                }
+            });
+
+            let essentialSum = 0;
+            let nonEssentialSum = 0;
+            for (const [cat, meta] of Object.entries(CATEGORY_META)) {
+                if (meta.group === '必要性') {
+                    essentialSum += catSums[cat] || 0;
+                } else {
+                    nonEssentialSum += catSums[cat] || 0;
+                }
+            }
+
+            const totalSpent = essentialSum + nonEssentialSum;
+            const remaining = budget - totalSpent;
+
+            document.getElementById('displayBudget').textContent = formatMoney(budget);
+            document.getElementById('displayTotalSpent').textContent = '$' + formatMoney(totalSpent);
+            
+            const remEl = document.getElementById('displayRemaining');
+            remEl.textContent = (remaining < 0 ? '-$' : '$') + formatMoney(Math.abs(remaining));
+            remEl.className = remaining < 0 
+                ? 'text-xl font-bold tracking-tight text-rose-400' 
+                : 'text-xl font-bold tracking-tight text-emerald-400';
+
+            const spentPercent = budget > 0 ? Math.min(100, Math.round((totalSpent / budget) * 100)) : 0;
+            document.getElementById('displaySpentPercent').textContent = `${spentPercent}%`;
+            
+            const essWidth = budget > 0 ? Math.min(100, (essentialSum / budget) * 100) : 0;
+            const nonEssWidth = budget > 0 ? Math.min(100 - essWidth, (nonEssentialSum / budget) * 100) : 0;
+            document.getElementById('barEssential').style.width = `${essWidth}%`;
+            document.getElementById('barNonEssential').style.width = `${nonEssWidth}%`;
+
+            document.getElementById('sumEssential').textContent = '$' + formatMoney(essentialSum);
+            document.getElementById('sumNonEssential').textContent = '$' + formatMoney(nonEssentialSum);
+            const limits = periodData.limits || {};
+
+            for (const [cat, sum] of Object.entries(catSums)) {
+                const el = document.getElementById(`cat-${cat}`);
+                const cardBtn = document.getElementById(`card-btn-${cat}`);
+                const limitWrap = document.getElementById(`limit-wrap-${cat}`);
+                const limitText = document.getElementById(`limit-text-${cat}`);
+                const limitBar = document.getElementById(`limit-bar-${cat}`);
+                const limitVal = limits[cat] || 0;
+                const isEss = CATEGORY_META[cat] && CATEGORY_META[cat].group === '必要性';
+
+                if (el) {
+                    el.textContent = '$' + formatMoney(sum);
+                    if (limitVal > 0 && sum > limitVal) {
+                        el.className = 'text-sm font-bold text-rose-600 truncate';
+                    } else {
+                        el.className = 'text-sm font-bold text-slate-800 truncate';
+                    }
+                }
+
+                if (limitWrap && limitText && limitBar && cardBtn) {
+                    if (limitVal > 0) {
+                        limitWrap.classList.remove('hidden');
+                        limitText.textContent = '$' + formatMoney(limitVal);
+                        const pct = Math.min(100, Math.round((sum / limitVal) * 100));
+                        limitBar.style.width = `${pct}%`;
+
+                        if (sum > limitVal) {
+                            limitBar.className = 'bg-rose-500 h-full transition-all duration-300';
+                            limitText.className = 'text-rose-500 font-semibold';
+                            cardBtn.className = 'w-full bg-rose-50/60 hover:bg-rose-50 active:scale-95 transition p-2 rounded-xl border border-rose-200 text-left';
+                        } else if (pct >= 80) {
+                            limitBar.className = 'bg-amber-500 h-full transition-all duration-300';
+                            limitText.className = 'text-amber-600 font-medium';
+                            cardBtn.className = 'w-full bg-slate-50 hover:bg-slate-100 active:scale-95 transition p-2 rounded-xl border border-slate-100 text-left';
+                        } else {
+                            limitBar.className = `${isEss ? 'bg-blue-500' : 'bg-amber-400'} h-full transition-all duration-300`;
+                            limitText.className = 'text-slate-400';
+                            cardBtn.className = 'w-full bg-slate-50 hover:bg-slate-100 active:scale-95 transition p-2 rounded-xl border border-slate-100 text-left';
+                        }
+                    } else {
+                        limitWrap.classList.add('hidden');
+                        cardBtn.className = 'w-full bg-slate-50 hover:bg-slate-100 active:scale-95 transition p-2 rounded-xl border border-slate-100 text-left';
+                    }
+                }
+            }
+
+            const filteredRecords = filter === 'ALL' ? records : records.filter(r => r.category === filter);
+            document.getElementById('recordCount').textContent = filteredRecords.length;
+            const listEl = document.getElementById('recordsList');
+            listEl.innerHTML = '';
+
+            if (filteredRecords.length === 0) {
+                listEl.innerHTML = `
+                    <div class="bg-white rounded-2xl p-6 text-center border border-dashed border-slate-200">
+                        <div class="w-9 h-9 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-1.5 text-slate-400">
+                            <i data-lucide="receipt" class="w-4 h-4"></i>
+                        </div>
+                        <p class="text-xs text-slate-500">${periodLabel} 還沒有消費紀錄</p>
+                        <p class="text-[11px] text-slate-400 mt-0.5">點擊下方按鈕或上方分類卡片開始記帳</p>
+                    </div>
+                `;
+            } else {
+                const sortedRecords = [...filteredRecords].sort((a, b) => getRecordTimestamp(b, currentYear) - getRecordTimestamp(a, currentYear));
+                sortedRecords.forEach(item => {
+                    const meta = CATEGORY_META[item.category] || { group: '非必要性', icon: 'tag', color: 'amber' };
+                    const isEss = meta.group === '必要性';
+                    const badgeClass = isEss ? 'bg-blue-50 text-blue-600' : 'bg-amber-50 text-amber-600';
+                    const noteText = item.note ? item.note : item.category;
+
+                    const row = document.createElement('div');
+                    row.className = 'bg-white p-3 rounded-2xl shadow-xs border border-slate-100 flex items-center justify-between';
+                    row.innerHTML = `
+                        <div onclick="openEditExpenseModal('${item.id}')" class="flex items-center space-x-3 overflow-hidden flex-1 cursor-pointer">
+                            <div class="w-8 h-8 rounded-xl ${badgeClass} flex items-center justify-center shrink-0">
+                                <i data-lucide="${meta.icon}" class="w-4 h-4"></i>
+                            </div>
+                            <div class="truncate">
+                                <div class="text-sm font-semibold text-slate-800 truncate">${escapeHtml(noteText)}</div>
+                                <div class="text-[11px] text-slate-400 flex items-center space-x-1.5">
+                                    <span>${escapeHtml(item.category)}</span>
+                                    <span>•</span>
+                                    <span>${escapeHtml(item.date)}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-1 shrink-0 ml-2">
+                            <span onclick="openEditExpenseModal('${item.id}')" class="text-sm font-bold text-slate-800 cursor-pointer mr-0.5">-$${formatMoney(item.amount)}</span>
+                            <button onclick="openEditExpenseModal('${item.id}')" title="編輯此筆花費" class="p-1.5 text-slate-300 hover:text-emerald-600 transition rounded-lg">
+                                <i data-lucide="edit-2" class="w-4 h-4"></i>
+                            </button>
+                            <button onclick="deleteRecord('${item.id}')" title="刪除此筆花費" class="p-1.5 text-slate-300 hover:text-rose-500 transition rounded-lg">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    `;
+                    listEl.appendChild(row);
+                });
+            }
+
+            safeRenderIcons();
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function quickAdd(category) {
+            selectCategory(category);
+            openAddModal();
+        }
+
+        function openAddModal() {
+            document.getElementById('editingRecordId').value = '';
+            document.getElementById('expenseModalTitle').innerHTML = `新增支出紀錄 (<span id="modalPeriodLabel">${getCurrentPeriodLabel()}</span>)`;
+            const currentCat = document.getElementById('selectedCategory').value;
+            selectCategory(CATEGORY_META[currentCat] ? currentCat : '食');
+            const modal = document.getElementById('addModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => {
+                document.getElementById('inputAmount').focus();
+            }, 100);
+        }
+
+        function openEditExpenseModal(id) {
+            const periodData = ensureCurrentPeriodData();
+            const record = periodData.records.find(r => r.id === id);
+            if (!record) return;
+
+            document.getElementById('editingRecordId').value = record.id;
+            document.getElementById('expenseModalTitle').innerHTML = `編輯支出紀錄 (<span id="modalPeriodLabel">${getCurrentPeriodLabel()}</span>)`;
+            selectCategory(CATEGORY_META[record.category] ? record.category : (Object.keys(CATEGORY_META)[0] || '食'));
+            document.getElementById('inputAmount').value = record.amount;
+            document.getElementById('inputNote').value = record.note || '';
+
+            const modal = document.getElementById('addModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => {
+                document.getElementById('inputAmount').focus();
+            }, 100);
+        }
+
+        function closeAddModal() {
+            const modal = document.getElementById('addModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.getElementById('editingRecordId').value = '';
+            document.getElementById('expenseForm').reset();
+        }
+
+        function selectCategory(cat) {
+            document.getElementById('selectedCategory').value = cat;
+            const isEss = CATEGORY_META[cat] && CATEGORY_META[cat].group === '必要性';
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                if (btn.dataset.cat === cat) {
+                    btn.className = isEss 
+                        ? 'cat-btn py-2.5 px-2 rounded-xl border-2 border-blue-600 bg-blue-50 text-blue-700 text-sm font-bold transition text-center truncate'
+                        : 'cat-btn py-2.5 px-2 rounded-xl border-2 border-amber-500 bg-amber-50 text-amber-700 text-sm font-bold transition text-center truncate';
+                } else {
+                    btn.className = 'cat-btn py-2.5 px-2 rounded-xl border border-slate-200 bg-white text-slate-600 text-sm font-medium transition text-center truncate';
+                }
+            });
+        }
+
+        function handleAddExpense(e) {
+            e.preventDefault();
+            const editingId = document.getElementById('editingRecordId').value;
+            const category = document.getElementById('selectedCategory').value;
+            const amount = parseInt(document.getElementById('inputAmount').value, 10);
+            const note = document.getElementById('inputNote').value.trim();
+
+            if (!amount || amount <= 0) return;
+
+            const periodData = ensureCurrentPeriodData();
+
+            if (editingId) {
+                const target = periodData.records.find(r => r.id === editingId);
+                if (target) {
+                    target.category = category;
+                    target.amount = amount;
+                    target.note = note;
+                }
+                saveToLocalStorage();
+                closeAddModal();
+                renderApp();
+                showToast(`已更新 ${category} $${formatMoney(amount)}`);
+                return;
+            }
+
+            const now = new Date();
+            const yearPrefix = currentYear !== String(now.getFullYear()) ? `${currentYear}/` : '';
+            const dateStr = `${yearPrefix}${now.getMonth() + 1}/${now.getDate()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            const exactTimestamp = currentYear === String(now.getFullYear()) && currentMonth === String(now.getMonth() + 1)
+                ? now.getTime()
+                : new Date(Number(currentYear), Number(currentMonth) - 1, now.getDate(), now.getHours(), now.getMinutes(), now.getSeconds()).getTime();
+
+            periodData.records.push({
+                id: Date.now().toString(),
+                category,
+                amount,
+                note,
+                date: dateStr,
+                timestamp: exactTimestamp
+            });
+
+            saveToLocalStorage();
+            closeAddModal();
+            renderApp();
+            showToast(`已新增 ${category} $${formatMoney(amount)}`);
+        }
+
+        function deleteRecord(id) {
+            const periodData = ensureCurrentPeriodData();
+            periodData.records = periodData.records.filter(r => r.id !== id);
+            saveToLocalStorage();
+            renderApp();
+            showToast('已刪除該筆紀錄');
+        }
+
+        function openNewCatModal() {
+            selectNewCatGroup('必要性');
+            document.getElementById('newCatName').value = '';
+            document.getElementById('newCatLimit').value = '';
+            const modal = document.getElementById('newCatModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => document.getElementById('newCatName').focus(), 100);
+        }
+
+        function closeNewCatModal() {
+            const modal = document.getElementById('newCatModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function selectNewCatGroup(group) {
+            document.getElementById('newCatGroup').value = group;
+            const btnEss = document.getElementById('btnGroupEss');
+            const btnNonEss = document.getElementById('btnGroupNonEss');
+            if (group === '必要性') {
+                btnEss.className = 'py-2 rounded-xl border-2 border-blue-600 bg-blue-50 text-blue-700 text-xs font-bold transition';
+                btnNonEss.className = 'py-2 rounded-xl border border-slate-200 bg-white text-slate-600 text-xs font-medium transition';
+            } else {
+                btnNonEss.className = 'py-2 rounded-xl border-2 border-amber-500 bg-amber-50 text-amber-700 text-xs font-bold transition';
+                btnEss.className = 'py-2 rounded-xl border border-slate-200 bg-white text-slate-600 text-xs font-medium transition';
+            }
+        }
+
+        function handleAddCategory(e) {
+            e.preventDefault();
+            const group = document.getElementById('newCatGroup').value;
+            const name = document.getElementById('newCatName').value.trim();
+            const limitVal = parseInt(document.getElementById('newCatLimit').value, 10);
+            if (!name) return;
+
+            if (CATEGORY_META[name]) {
+                showToast('此項目名稱已存在！');
+                return;
+            }
+
+            CATEGORY_META[name] = {
+                group: group,
+                icon: group === '必要性' ? 'check-circle' : 'sparkles',
+                color: group === '必要性' ? 'blue' : 'amber',
+                isCustom: true
+            };
+
+            const periodData = ensureCurrentPeriodData();
+            if (!isNaN(limitVal) && limitVal > 0) {
+                if (!periodData.limits) periodData.limits = {};
+                periodData.limits[name] = limitVal;
+            }
+
+            saveToLocalStorage();
+            closeNewCatModal();
+            syncCategoryUI();
+            selectCategory(name);
+            renderApp();
+            showToast(`已新增「${name}」至${group}`);
+        }
+
+        function openCatLimitsModal() {
+            const listEl = document.getElementById('catLimitsList');
+            const periodData = ensureCurrentPeriodData();
+            const limits = periodData.limits || {};
+            listEl.innerHTML = '';
+
+            for (const [cat, meta] of Object.entries(CATEGORY_META)) {
+                const isEss = meta.group === '必要性';
+                const badgeClass = isEss ? 'bg-blue-50 text-blue-600' : 'bg-amber-50 text-amber-600';
+                const currentLimit = limits[cat] || '';
+
+                const row = document.createElement('div');
+                row.className = 'flex items-center justify-between bg-slate-50 p-2.5 rounded-xl border border-slate-100';
+                row.innerHTML = `
+                    <div class="flex items-center space-x-2 overflow-hidden">
+                        <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded ${badgeClass} shrink-0">${meta.group}</span>
+                        <span class="text-sm font-bold text-slate-700 truncate">${escapeHtml(cat)}</span>
+                    </div>
+                    <div class="relative w-28 shrink-0">
+                        <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">$</span>
+                        <input type="number" inputmode="numeric" min="0" data-limit-cat="${escapeHtml(cat)}" value="${currentLimit}" placeholder="無上限" oninput="updateCatLimitsTotal()"
+                            class="cat-limit-input w-full pl-6 pr-2 py-1.5 bg-white border border-slate-200 rounded-lg text-sm font-bold text-right text-slate-800">
+                    </div>
+                `;
+                listEl.appendChild(row);
+            }
+
+            updateCatLimitsTotal();
+            const modal = document.getElementById('catLimitsModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeCatLimitsModal() {
+            const modal = document.getElementById('catLimitsModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function updateCatLimitsTotal() {
+            let total = 0;
+            document.querySelectorAll('.cat-limit-input').forEach(input => {
+                const val = parseInt(input.value, 10);
+                if (!isNaN(val) && val > 0) total += val;
+            });
+            document.getElementById('catLimitsTotalDisplay').textContent = '$' + formatMoney(total);
+        }
+
+        function saveCatLimits() {
+            const periodData = ensureCurrentPeriodData();
+            if (!periodData.limits) periodData.limits = {};
+            document.querySelectorAll('.cat-limit-input').forEach(input => {
+                const cat = input.dataset.limitCat;
+                const val = parseInt(input.value, 10);
+                if (!isNaN(val) && val > 0) {
+                    periodData.limits[cat] = val;
+                } else {
+                    delete periodData.limits[cat];
+                }
+            });
+            saveToLocalStorage();
+            closeCatLimitsModal();
+            renderApp();
+            showToast('已更新各項目可用上限');
+        }
+
+        function deleteCustomCategory(e, catName) {
+            e.stopPropagation();
+            const hasRecords = Object.values(appData).some(m => m.records && m.records.some(r => r.category === catName));
+            if (hasRecords) {
+                showToast('此項目已有消費紀錄，請先刪除紀錄後再移除');
+                return;
+            }
+            delete CATEGORY_META[catName];
+            saveToLocalStorage();
+            syncCategoryUI();
+            renderApp();
+            showToast(`已移除「${catName}」`);
+        }
+
+        function openBudgetModal() {
+            const periodData = ensureCurrentPeriodData();
+            document.getElementById('inputBudget').value = periodData.budget;
+            const modal = document.getElementById('budgetModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => document.getElementById('inputBudget').focus(), 100);
+        }
+
+        function closeBudgetModal() {
+            const modal = document.getElementById('budgetModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function saveBudget() {
+            const val = parseInt(document.getElementById('inputBudget').value, 10);
+            if (!isNaN(val) && val >= 0) {
+                const periodData = ensureCurrentPeriodData();
+                periodData.budget = val;
+                saveToLocalStorage();
+                renderApp();
+                showToast(`已更新 ${getCurrentPeriodLabel()} 可用金額`);
+            }
+            closeBudgetModal();
+        }
+
+        function openAppInstallModal() {
+            const modal = document.getElementById('appInstallModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            safeRenderIcons();
+        }
+
+        function closeAppInstallModal() {
+            const modal = document.getElementById('appInstallModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function toggleExcelMenu(e) {
+            if (e) e.stopPropagation();
+            const menu = document.getElementById('excelDropdownMenu');
+            if (menu) menu.classList.toggle('hidden');
+        }
+
+        function closeExcelMenu() {
+            const menu = document.getElementById('excelDropdownMenu');
+            if (menu) menu.classList.add('hidden');
+        }
+
+        document.addEventListener('click', function(e) {
+            const container = document.getElementById('excelMenuContainer');
+            if (container && !container.contains(e.target)) {
+                closeExcelMenu();
+            }
+        });
+
+        function exportBackupJson() {
+            const payload = {
+                version: 'V6.6',
+                exportedAt: new Date().toISOString(),
+                categoryMeta: CATEGORY_META,
+                appData: appData
+            };
+            const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const dateTag = new Date().toISOString().slice(0, 10);
+            a.href = url;
+            a.download = `極簡記帳_備份_${dateTag}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('已下載本機完整備份檔');
+        }
+
+        function importBackupJson(event) {
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    if (parsed && parsed.appData && parsed.categoryMeta) {
+                        appData = migrateLegacyDataObject(parsed.appData, currentYear);
+                        CATEGORY_META = parsed.categoryMeta;
+                        const existingYears = Object.keys(appData).map(k => k.split('-')[0]);
+                        initYearSelector(existingYears);
+                        document.getElementById('yearSelector').value = currentYear;
+                        ensureCurrentPeriodData();
+                        saveToLocalStorage();
+                        syncCategoryUI();
+                        renderApp();
+                        closeAppInstallModal();
+                        showToast('備份資料還原成功！');
+                    } else {
+                        showToast('備份檔格式不正確');
+                    }
+                } catch (err) {
+                    showToast('讀取備份檔失敗');
+                }
+                event.target.value = '';
+            };
+            reader.readAsText(file);
+        }
+
+        function copySummaryToClipboard() {
+            const periodData = ensureCurrentPeriodData();
+            const periodLabel = getCurrentPeriodLabel();
+            const limits = periodData.limits || {};
+            const catSums = {};
+            for (const cat of Object.keys(CATEGORY_META)) {
+                catSums[cat] = 0;
+            }
+            periodData.records.forEach(r => {
+                if (catSums.hasOwnProperty(r.category)) catSums[r.category] += r.amount;
+            });
+            const totalSpent = Object.values(catSums).reduce((a, b) => a + b, 0);
+            const remaining = periodData.budget - totalSpent;
+
+            let essLines = '';
+            let nonEssLines = '';
+            for (const [cat, meta] of Object.entries(CATEGORY_META)) {
+                const limitStr = limits[cat] ? ` / 上限 ${limits[cat]}` : '';
+                if (meta.group === '必要性') {
+                    essLines += `${cat}：${catSums[cat]}${limitStr}\n`;
+                } else {
+                    nonEssLines += `${cat}：${catSums[cat]}${limitStr}\n`;
+                }
+            }
+
+            const text = `【${periodLabel} 記帳結算】\n可用金額：${periodData.budget}\n----------------\n[必要性]\n${essLines}[非必要性]\n${nonEssLines}----------------\n總支出：${totalSpent}\n剩餘餘額：${remaining}`;
+
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                showToast('結算報表已複製到剪貼簿！');
+            } catch (err) {
+                showToast('複製失敗，請手動選取');
+            }
+            document.body.removeChild(textarea);
+        }
+
+        function exportToExcel() {
+            const periodData = ensureCurrentPeriodData();
+            const periodLabel = getCurrentPeriodLabel();
+            const fileSafeLabel = `${currentYear}年${currentMonth}月`;
+            const records = periodData.records;
+            const rows = [];
+            const merges = [];
+
+            rows.push(['', periodLabel, '', '']);
+            merges.push({ s: { r: 0, c: 1 }, e: { r: 0, c: 3 } });
+
+            rows.push(['', '', '金額', '說明']);
+            rows.push(['', '可用金額', periodData.budget, '']);
+
+            const essCats = Object.entries(CATEGORY_META).filter(([_, m]) => m.group === '必要性').map(([c]) => c);
+            const nonEssCats = Object.entries(CATEGORY_META).filter(([_, m]) => m.group === '非必要性').map(([c]) => c);
+            const allCats = [...essCats, ...nonEssCats];
+
+            const getCatEntries = (cat) => {
+                const catRecs = records
+                    .filter(r => r.category === cat)
+                    .sort((a, b) => getRecordTimestamp(b, currentYear) - getRecordTimestamp(a, currentYear));
+                if (catRecs.length === 0) {
+                    return [{ amount: '', note: '' }];
+                }
+                return catRecs.map(r => ({
+                    amount: r.amount,
+                    note: r.note ? `${r.note} (${r.date})` : r.date
+                }));
+            };
+
+            const essStartRow = rows.length;
+            essCats.forEach(cat => {
+                const entries = getCatEntries(cat);
+                entries.forEach((entry, idx) => {
+                    rows.push([
+                        '',
+                        idx === 0 ? cat : '',
+                        entry.amount,
+                        entry.note
+                    ]);
+                });
+            });
+            const essEndRow = rows.length - 1;
+            if (essEndRow >= essStartRow) {
+                rows[essStartRow][0] = '必要性';
+                if (essEndRow > essStartRow) {
+                    merges.push({ s: { r: essStartRow, c: 0 }, e: { r: essEndRow, c: 0 } });
+                }
+            }
+
+            const nonEssStartRow = rows.length;
+            nonEssCats.forEach(cat => {
+                const entries = getCatEntries(cat);
+                entries.forEach((entry, idx) => {
+                    rows.push([
+                        '',
+                        idx === 0 ? cat : '',
+                        entry.amount,
+                        entry.note
+                    ]);
+                });
+            });
+            const nonEssEndRow = rows.length - 1;
+            if (nonEssEndRow >= nonEssStartRow) {
+                rows[nonEssStartRow][0] = '非必要性';
+                if (nonEssEndRow > nonEssStartRow) {
+                    merges.push({ s: { r: nonEssStartRow, c: 0 }, e: { r: nonEssEndRow, c: 0 } });
+                }
+            }
+
+            rows.push(['', '', '', '']);
+            rows.push(['', '', '', '']);
+
+            const limits = periodData.limits || {};
+            const summaryStartRow = rows.length;
+            allCats.forEach(cat => {
+                const sum = records.filter(r => r.category === cat).reduce((acc, cur) => acc + cur.amount, 0);
+                const limitNote = limits[cat] ? `可用上限: $${limits[cat]}` : '';
+                rows.push(['', cat, sum, limitNote]);
+            });
+            const summaryEndRow = rows.length - 1;
+            if (summaryEndRow >= summaryStartRow) {
+                rows[summaryStartRow][0] = '結算';
+                if (summaryEndRow > summaryStartRow) {
+                    merges.push({ s: { r: summaryStartRow, c: 0 }, e: { r: summaryEndRow, c: 0 } });
+                }
+            }
+
+            if (typeof XLSX !== 'undefined') {
+                const ws = XLSX.utils.aoa_to_sheet(rows);
+                ws['!merges'] = merges;
+                ws['!cols'] = [
+                    { wch: 12 },
+                    { wch: 14 },
+                    { wch: 14 },
+                    { wch: 28 }
+                ];
+
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, `${fileSafeLabel}記帳`);
+
+                XLSX.writeFile(wb, `記帳結算表_${fileSafeLabel}.xlsx`);
+                showToast(`已下載「記帳結算表_${fileSafeLabel}.xlsx」`);
+            } else {
+                const csvContent = '\uFEFF' + rows.map(r => r.map(cell => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `記帳結算表_${fileSafeLabel}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                showToast(`離線模式已匯出「記帳結算表_${fileSafeLabel}.csv」`);
+            }
+        }
+
+        function getRecordTimestamp(record, fallbackYear) {
+            if (record && typeof record.timestamp === 'number' && !isNaN(record.timestamp)) {
+                return record.timestamp;
+            }
+            const dateStr = String(record?.date || '').trim();
+            const fullMatch = dateStr.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})(?:\s+(\d{1,2}):(\d{2}))?/);
+            if (fullMatch) {
+                return new Date(
+                    Number(fullMatch[1]),
+                    Number(fullMatch[2]) - 1,
+                    Number(fullMatch[3]),
+                    Number(fullMatch[4] || 0),
+                    Number(fullMatch[5] || 0)
+                ).getTime();
+            }
+            const shortMatch = dateStr.match(/^(\d{1,2})\/(\d{1,2})(?:\s+(\d{1,2}):(\d{2}))?/);
+            if (shortMatch) {
+                return new Date(
+                    Number(fallbackYear || new Date().getFullYear()),
+                    Number(shortMatch[1]) - 1,
+                    Number(shortMatch[2]),
+                    Number(shortMatch[3] || 0),
+                    Number(shortMatch[4] || 0)
+                ).getTime();
+            }
+            const idTs = parseInt(String(record?.id || '').split('_')[0], 10);
+            return !isNaN(idTs) ? idTs : 0;
+        }
+
+        function importFromExcel(event) {
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
+
+            if (typeof XLSX === 'undefined') {
+                showToast('Excel 模組載入中，請確認網路連線後再試');
+                event.target.value = '';
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+
+                    if (!rows || rows.length < 3) {
+                        showToast('Excel 內容格式不符，無法讀取');
+                        return;
+                    }
+
+                    let targetYear = currentYear;
+                    let targetMonth = currentMonth;
+                    const headerText = String(rows[0]?.[1] || firstSheetName || '').trim();
+                    const ymMatch = headerText.match(/(20\d{2})\s*[\/\-年]\s*(\d{1,2})\s*月?/);
+                    const mOnlyMatch = headerText.match(/^(\d{1,2})\s*月$/);
+
+                    if (ymMatch) {
+                        targetYear = ymMatch[1];
+                        targetMonth = String(parseInt(ymMatch[2], 10));
+                    } else if (mOnlyMatch) {
+                        targetMonth = String(parseInt(mOnlyMatch[1], 10));
+                    }
+
+                    initYearSelector([targetYear]);
+                    currentYear = targetYear;
+                    if (document.querySelector(`#monthSelector option[value="${targetMonth}"]`)) {
+                        currentMonth = targetMonth;
+                    }
+                    document.getElementById('yearSelector').value = currentYear;
+                    document.getElementById('monthSelector').value = currentMonth;
+
+                    const periodData = ensureCurrentPeriodData();
+                    let newBudget = periodData.budget;
+                    const importedRecords = [];
+                    const importedLimits = {};
+
+                    let currentGroup = '必要性';
+                    let currentCat = '';
+                    let inSummarySection = false;
+                    let hasCustomCatsAdded = false;
+
+                    for (let i = 0; i < rows.length; i++) {
+                        const row = rows[i] || [];
+                        const colA = String(row[0] ?? '').trim();
+                        const colB = String(row[1] ?? '').trim();
+                        const colC = row[2];
+                        const colD = String(row[3] ?? '').trim();
+
+                        if (i === 0 || (colC === '金額' && colD === '說明')) continue;
+
+                        if (colB === '可用金額') {
+                            const parsedBudget = Number(String(colC).replace(/[,$\s]/g, ''));
+                            if (!isNaN(parsedBudget) && parsedBudget >= 0 && String(colC).trim() !== '') {
+                                newBudget = Math.round(parsedBudget);
+                            }
+                            continue;
+                        }
+
+                        if (colA === '必要性') {
+                            currentGroup = '必要性';
+                            inSummarySection = false;
+                        } else if (colA === '非必要性') {
+                            currentGroup = '非必要性';
+                            inSummarySection = false;
+                        } else if (colA === '結算') {
+                            inSummarySection = true;
+                        }
+
+                        if (inSummarySection) {
+                            if (colB && colD) {
+                                const limitMatch = colD.match(/可用上限\s*[:：]\s*\$?\s*([\d,]+)/);
+                                if (limitMatch) {
+                                    const limitVal = parseInt(limitMatch[1].replace(/,/g, ''), 10);
+                                    if (!isNaN(limitVal) && limitVal > 0) {
+                                        importedLimits[colB] = limitVal;
+                                    }
+                                }
+                            }
+                            continue;
+                        }
+
+                        if (colB) {
+                            currentCat = colB;
+                            if (!CATEGORY_META[currentCat]) {
+                                CATEGORY_META[currentCat] = {
+                                    group: currentGroup,
+                                    icon: currentGroup === '必要性' ? 'check-circle' : 'sparkles',
+                                    color: currentGroup === '必要性' ? 'blue' : 'amber',
+                                    isCustom: true
+                                };
+                                hasCustomCatsAdded = true;
+                            }
+                        }
+
+                        const rawAmountStr = String(colC ?? '').replace(/[,$\s]/g, '');
+                        const parsedAmount = Number(rawAmountStr);
+
+                        if (currentCat && rawAmountStr !== '' && !isNaN(parsedAmount) && parsedAmount > 0) {
+                            let noteText = colD;
+                            let dateText = '';
+
+                            const noteDateMatch = colD.match(/^(.*?)\s*\(((?:\d{4}\/)?\d{1,2}\/\d{1,2}(?:\s+\d{1,2}:\d{2})?)\)$/);
+                            const pureDateMatch = colD.match(/^((?:\d{4}\/)?\d{1,2}\/\d{1,2}(?:\s+\d{1,2}:\d{2})?)$/);
+
+                            if (noteDateMatch) {
+                                noteText = noteDateMatch[1].trim();
+                                dateText = noteDateMatch[2].trim();
+                            } else if (pureDateMatch) {
+                                noteText = '';
+                                dateText = pureDateMatch[1].trim();
+                            } else {
+                                const now = new Date();
+                                dateText = `${now.getMonth() + 1}/${now.getDate()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+                            }
+
+                            const recObj = {
+                                id: `${Date.now()}_${i}_${Math.random().toString(36).slice(2, 6)}`,
+                                category: currentCat,
+                                amount: Math.round(parsedAmount),
+                                note: noteText,
+                                date: dateText,
+                                _rowIndex: i
+                            };
+                            recObj.timestamp = getRecordTimestamp(recObj, targetYear);
+                            importedRecords.push(recObj);
+                        }
+                    }
+
+                    importedRecords.sort((a, b) => {
+                        if (b.timestamp !== a.timestamp) {
+                            return b.timestamp - a.timestamp;
+                        }
+                        return a._rowIndex - b._rowIndex;
+                    });
+                    importedRecords.forEach(r => delete r._rowIndex);
+
+                    periodData.budget = newBudget;
+                    periodData.records = importedRecords;
+                    if (Object.keys(importedLimits).length > 0) {
+                        periodData.limits = importedLimits;
+                    }
+
+                    saveToLocalStorage();
+                    if (hasCustomCatsAdded) {
+                        syncCategoryUI();
+                    }
+                    renderApp();
+                    showToast(`已從 Excel 匯入並依時間排序 ${getCurrentPeriodLabel()}（共 ${importedRecords.length} 筆）`);
+                } catch (err) {
+                    console.error('Excel 匯入失敗:', err);
+                    showToast('Excel 讀取失敗，請確認檔案格式是否正確');
+                } finally {
+                    event.target.value = '';
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+    </script>
+</body>
+</html>
